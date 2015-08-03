@@ -2,10 +2,33 @@
 (function (process){
 var dragDrop = require('drag-drop')
 
+var ipfs = ipfsAPI()
+
+dragDrop("#tiles", function(files) {
+	console.log("got some files: ", files)
+	files.forEach(function(f, i) {
+		console.log("got file: ", f.name)
+
+		var reader = new FileReader()
+		reader.addEventListener('load', function (e) {
+			var arr = new Uint8Array(e.target.result)
+			var buffer = new ArrayBuffer(arr)
+
+			ipfs.add(buffer, function(err, res) {
+				if(err || !res) return console.error(err)
+				console.log(res)
+			})
+		})
+		reader.addEventListener('error', function(err) {
+			console.error('FileReader error' + err)
+		})
+		reader.readAsArrayBuffer(f)
+	})
+})
+
 function doThings() {
 	var root = document.getElementById("tiles")
 	var curdir = "/"
-	var ipfs = ipfsAPI()
 
 	function addDirEntry(entry) {
 		var o = document.createElement("div")
@@ -85,7 +108,7 @@ function doThings() {
 			}
 
 			if (!found) {
-				var dirHash = "QmSumZTQWezHMs1t9bs1QF3NKUmX3wf6FhGWpuqe1uteRD"
+				var dirHash = "QmPettmvm2KhgxT6nsmRVtYp7a9j1moQtbTE1hvbWiRXpr"
 				ipfs.mfs.create(mfs, dirHash, function(err, res) {
 					if(err) return console.error(err)
 					showDir("")
