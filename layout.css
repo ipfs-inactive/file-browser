@@ -1,0 +1,30 @@
+body {
+	background: black;
+}
+
+.title {
+	background: #dddddd;
+	margin: 10px auto 10px auto;
+	width: 960px;
+	padding: 2px;
+	text-align: center;
+}
+
+.container {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	background: #dddddd;
+	height: 80%;
+}
+
+.item {
+	width: 100px;
+	height: 100px;
+	background: grey;
+	border: thick solid black;
+	border-radius: 5px;
+	margin: 4px;
+	color: white;
+	align-self: flex-start;
+}
