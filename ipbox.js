@@ -10,7 +10,7 @@ dragDrop("#tiles", function(files) {
 		var reader = new FileReader()
 		reader.addEventListener('load', function (e) {
 			var arr = new Uint8Array(e.target.result)
-			var buffer = new ArrayBuffer(arr)
+			var buffer = new Buffer(arr)
 
 			ipfs.add(buffer, function(err, res) {
 				if(err || !res) return console.error(err)
@@ -78,6 +78,7 @@ function doThings() {
 
 		addDirEntry({Name:"..", Type:1})
 
+		console.log('ls -> ', curdir)
 		ipfs.mfs.ls(fs, curdir, function(err, res) {
 			if(err || !res) {
 				console.log("ls failed")
@@ -92,8 +93,6 @@ function doThings() {
 
 	function mountMfs(mfs) {
 		ipfs.mfs.listopen(function(err, res) {
-			console.log(res)
-			console.log(err)
 			if(err || !res) return console.error(err)
 
 			var found = false
@@ -106,7 +105,7 @@ function doThings() {
 			}
 
 			if (!found) {
-				var dirHash = "QmPettmvm2KhgxT6nsmRVtYp7a9j1moQtbTE1hvbWiRXpr"
+				var dirHash = "QmcQCukqo2eLv2KfGor9uJr5VHx3oLqNbWSt4T5yMpSVtS"
 				ipfs.mfs.create(mfs, dirHash, function(err, res) {
 					if(err) return console.error(err)
 					showDir("")
