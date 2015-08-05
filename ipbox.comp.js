@@ -167,11 +167,12 @@ var Explorer = React.createClass({displayName: "Explorer",
 			return (React.createElement(DirEntry, {onClick: this.chdir.bind(this, item), item: item}))
         }, this)
 
-		console.log("entries in render: ", entries)
 		return (
+		React.createElement("div", null, 
+		React.createElement("div", {className: "pathbar"}, "/" + this.path.join("/")), 
 		React.createElement("div", {className: "explorer"}, 
 		React.createElement(DirEntry, {onClick: this.up.bind(this), item: {Name:"..", Type: 1}}), 
-		entries)
+		entries))
 		);
 	}
 })

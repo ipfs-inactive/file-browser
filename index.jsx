@@ -1,7 +1,31 @@
 var React = require('react')
 var ipfs = require('ipfs-api')()
+var dragDrop = require('drag-drop')
 
 var fs = "testfs"
+
+dragDrop("#explorer", function(files) {
+	console.log("got some files: ", files)
+	files.forEach(function(f, i) {
+		console.log("got file: ", f.name)
+
+		var reader = new FileReader()
+		reader.addEventListener('load', function (e) {
+			var arr = new Uint8Array(e.target.result)
+			var buffer = new Buffer(arr)
+
+			ipfs.add(buffer, function(err, res) {
+				if(err || !res) return console.error(err)
+				console.log(res)
+			})
+		})
+		reader.addEventListener('error', function(err) {
+			console.error('FileReader error' + err)
+		})
+		reader.readAsArrayBuffer(f)
+	})
+})
+
 
 function mountMfs(mfs, defaultHash) {
 	ipfs.mfs.listopen(function(err, res) {
@@ -166,11 +190,12 @@ var Explorer = React.createClass({
 			return (<DirEntry onClick={this.chdir.bind(this, item)} item={item} />)
         }, this)
 
-		console.log("entries in render: ", entries)
 		return (
+		<div className="container">
+		<div className="pathbar">{"/" + this.path.join("/")}</div>
 		<div className="explorer">
 		<DirEntry onClick={this.up.bind(this)} item={{Name:"..", Type: 1}} />
-		{entries}</div>
+		{entries}</div></div>
 		);
 	}
 })
