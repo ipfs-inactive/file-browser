@@ -120,4 +120,41 @@ function doThings() {
 	mountMfs(fs)
 } 
 
-doThings()
+var mfsExplorer = function() {
+	var curdir
+	var fsname = "testfs"
+
+	var ifps = ipfsAPI()
+
+	function mountMfs(mfs, defaultHash) {
+		ipfs.mfs.listopen(function(err, res) {
+			if(err || !res) return console.error(err)
+
+			var found = false
+			if (res.Mounts) {
+				res.Mounts.forEach(function(mount, i) {
+					if (mount.Name == mfs) {
+						found = true
+					}
+				})
+			}
+
+			if (!found) {
+				var dirHash = defaultHash || "QmcQCukqo2eLv2KfGor9uJr5VHx3oLqNbWSt4T5yMpSVtS"
+				ipfs.mfs.create(mfs, dirHash, function(err, res) {
+					if(err) return console.error(err)
+					chdir("/")
+				})
+			} else {
+				chdir("/")
+			}
+		})
+	}
+
+	function chdir(dir) {
+		// concat paths
+		newpath = magicmagicmagic
+	}
+}
+
+
