@@ -74,7 +74,9 @@ var DirEntry = React.createClass({displayName: "DirEntry",
 	render: function() {
 		if (this.props.item.Type == 1) {
 			return (
-				React.createElement("div", {onClick: this.props.onClick, className: "item", onContextMenu: this.contextMenu}, 
+				React.createElement("div", {onClick: this.props.onClick, 
+				onDoubleClick: this.props.onDoubleClick, 
+				className: "item", onContextMenu: this.contextMenu}, 
 				React.createElement("img", {className: "item-img", src: "img/folder.png"}), 
 				React.createElement("p", {className: "item-title"}, this.props.item.Name))
 			);
@@ -97,10 +99,7 @@ var loaddirs = (function () {
 			path = '/'
 		}
 		ipfs.mfs.ls(fs, path, function(err, res) {
-			if (err || !res) {
-				console.error(err)
-				return
-			}
+			if (err || !res) return console.error(err)
 
 			dispatch.fire('resp-chdir', {
 				entries: res.Entries,
@@ -133,15 +132,30 @@ var Explorer = React.createClass({displayName: "Explorer",
 
 				ipfs.add(buffer, function(err, res) {
 					if(err || !res) return console.error(err)
-					var path = curpath.slice()
-					path.push(f.name)
-					console.log(res, path)
-					ipfs.mfs.put(fs, res.Hash, path.join('/'), function(err, res) {
+
+					var filehash = res.Hash
+
+					// ensure parent dirs are made
+					var parentDir = f.path.split('/').slice(0, -1)
+					if (parentDir[0] == "") {
+						parentDir = parentDir.slice(1)
+					}
+					var relpath = curpath.concat(parentDir)
+
+					var fpath = relpath.slice()
+					fpath.push(f.name)
+					console.log(res, fpath)
+
+					ipfs.mfs.mkdir(fs, relpath.join('/'), true, function(err, res) {
 						if (err) return console.error(err)
-						
-						dispatch.fire('act-chdir', {
-							fs: fs,
-							path: curpath,
+
+						ipfs.mfs.put(fs, filehash, fpath.join('/'), function(err, res) {
+							if (err) return console.error(err)
+							
+							dispatch.fire('act-chdir', {
+								fs: fs,
+								path: curpath,
+							})
 						})
 					})
 				})
@@ -201,12 +215,21 @@ var Explorer = React.createClass({displayName: "Explorer",
 			path: npath,
 		})
 	},
+	selectEntry: function(e) {
+		console.log("entry selected", e)
+	},
 	render: function() {
 
 		if (this.state.entries) {
 			var entries = this.state.entries.map(function iterator(item) {
-				return (React.createElement(DirEntry, {onClick: this.chdir.bind(this, item), item: item}))
+				return (React.createElement(DirEntry, {onClick: this.selectEntry.bind(this, item), 
+						onDoubleClick: this.chdir.bind(this, item), item: item}))
 			}, this)
+		}
+
+		upBox = {
+			Name: "..",
+			Type: 1,
 		}
 
 		return (
@@ -214,7 +237,9 @@ var Explorer = React.createClass({displayName: "Explorer",
 		this.state.loading ? React.createElement("div", null, " LOADING!!! ") : undefined, 
 		React.createElement("div", {className: "pathbar"}, "/" + this.path.join("/")), 
 		React.createElement("div", {className: "explorer", id: "explorer"}, 
-		React.createElement(DirEntry, {onClick: this.up, item: {Name:"..", Type: 1}}), 
+		this.path.length > 0 ?
+		React.createElement(DirEntry, {onClick: this.selectEntry.bind(this, upBox), 
+		onDoubleClick: this.up, item: upBox}) : undefined, 
 		entries))
 		);
 	}
@@ -1574,6 +1599,9 @@ module.exports = function (host_or_multiaddr, port) {
       read: function (name, path, cb) {
         return send('mfs/read', path, {session: name}, null, cb)
       },
+	  mkdir: function(name, path, dashp, cb) {
+		return send('mfs/mkdir', path, {session: name, parents: dashp}, null, cb)
+	  },
       listopen: function (cb) {
         return send('mfs', null, null, null, cb)
       }

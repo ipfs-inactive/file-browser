@@ -72,7 +72,9 @@ var DirEntry = React.createClass({
 	render: function() {
 		if (this.props.item.Type == 1) {
 			return (
-				<div onClick={this.props.onClick} className="item" onContextMenu={this.contextMenu}>
+				<div onClick={this.props.onClick}
+				onDoubleClick={this.props.onDoubleClick}
+				className="item" onContextMenu={this.contextMenu}>
 				<img className="item-img" src="img/folder.png" />
 				<p className="item-title">{this.props.item.Name}</p></div>
 			);
@@ -95,10 +97,7 @@ var loaddirs = (function () {
 			path = '/'
 		}
 		ipfs.mfs.ls(fs, path, function(err, res) {
-			if (err || !res) {
-				console.error(err)
-				return
-			}
+			if (err || !res) return console.error(err)
 
 			dispatch.fire('resp-chdir', {
 				entries: res.Entries,
@@ -131,15 +130,30 @@ var Explorer = React.createClass({
 
 				ipfs.add(buffer, function(err, res) {
 					if(err || !res) return console.error(err)
-					var path = curpath.slice()
-					path.push(f.name)
-					console.log(res, path)
-					ipfs.mfs.put(fs, res.Hash, path.join('/'), function(err, res) {
+
+					var filehash = res.Hash
+
+					// ensure parent dirs are made
+					var parentDir = f.path.split('/').slice(0, -1)
+					if (parentDir[0] == "") {
+						parentDir = parentDir.slice(1)
+					}
+					var relpath = curpath.concat(parentDir)
+
+					var fpath = relpath.slice()
+					fpath.push(f.name)
+					console.log(res, fpath)
+
+					ipfs.mfs.mkdir(fs, relpath.join('/'), true, function(err, res) {
 						if (err) return console.error(err)
-						
-						dispatch.fire('act-chdir', {
-							fs: fs,
-							path: curpath,
+
+						ipfs.mfs.put(fs, filehash, fpath.join('/'), function(err, res) {
+							if (err) return console.error(err)
+							
+							dispatch.fire('act-chdir', {
+								fs: fs,
+								path: curpath,
+							})
 						})
 					})
 				})
@@ -199,12 +213,21 @@ var Explorer = React.createClass({
 			path: npath,
 		})
 	},
+	selectEntry: function(e) {
+		console.log("entry selected", e)
+	},
 	render: function() {
 
 		if (this.state.entries) {
 			var entries = this.state.entries.map(function iterator(item) {
-				return (<DirEntry onClick={this.chdir.bind(this, item)} item={item} />)
+				return (<DirEntry onClick={this.selectEntry.bind(this, item)} 
+						onDoubleClick={this.chdir.bind(this, item)} item={item} />)
 			}, this)
+		}
+
+		upBox = {
+			Name: "..",
+			Type: 1,
 		}
 
 		return (
@@ -212,8 +235,16 @@ var Explorer = React.createClass({
 		{this.state.loading ? <div> LOADING!!! </div> : undefined}
 		<div className="pathbar">{"/" + this.path.join("/")}</div>
 		<div className="explorer" id="explorer">
-		<DirEntry onClick={this.up} item={{Name:"..", Type: 1}} />
-		{entries}</div></div>
+
+		// '..' dir unless we're at the root
+		{this.path.length > 0 ?
+		<DirEntry onClick={this.selectEntry.bind(this, upBox)}
+		onDoubleClick={this.up} item={upBox} /> : undefined}
+
+		// directory entries
+		{entries}
+		
+		</div></div>
 		);
 	}
 })
