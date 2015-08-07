@@ -70,23 +70,40 @@ var DirEntry = React.createClass({
 		console.log("right click on an item!")
 	},
 	render: function() {
+		baseclass = "item"
+		if (this.props.item.highlight) {
+			baseclass = baseclass + " selected"
+		}
 		if (this.props.item.Type == 1) {
 			return (
 				<div onClick={this.props.onClick}
 				onDoubleClick={this.props.onDoubleClick}
-				className="item" onContextMenu={this.contextMenu}>
+				className={baseclass} onContextMenu={this.contextMenu}>
 				<img className="item-img" src="img/folder.png" />
 				<p className="item-title">{this.props.item.Name}</p></div>
 			);
 		} else {
 			return (
-				<div className="item" onContextMenu={this.contextMenu}>
+				<div className={baseclass} onClick={this.props.onClick}
+				onContextMenu={this.contextMenu}>
 				<img className="item-img" src="img/file.png" />
 				<p className="item-title">{this.props.item.Name}</p></div>
 			);
 		}
 	}
 
+})
+
+var InfoBar = React.createClass({
+	render: function() {
+		return (
+			<div className="infobar">
+			<h3>{this.props.item.Name}</h3>
+			<p>Size: {this.props.item.Size} </p>
+			<p>Hash: {this.props.item.Hash} </p>
+			<p>(show providers here on button click)</p>
+			</div>)
+	}
 })
 
 var loaddirs = (function () {
@@ -215,6 +232,13 @@ var Explorer = React.createClass({
 	},
 	selectEntry: function(e) {
 		console.log("entry selected", e)
+		s = this.state
+		if (s.selected) {
+			s.selected.highlight = false
+		}
+		s.selected = e
+		s.selected.highlight = true
+		this.setState(s)
 	},
 	render: function() {
 
@@ -234,14 +258,13 @@ var Explorer = React.createClass({
 		<div className="container">
 		{this.state.loading ? <div> LOADING!!! </div> : undefined}
 		<div className="pathbar">{"/" + this.path.join("/")}</div>
+		{this.state.selected ? <InfoBar item={this.state.selected} /> : undefined}
 		<div className="explorer" id="explorer">
 
-		// '..' dir unless we're at the root
 		{this.path.length > 0 ?
 		<DirEntry onClick={this.selectEntry.bind(this, upBox)}
 		onDoubleClick={this.up} item={upBox} /> : undefined}
 
-		// directory entries
 		{entries}
 		
 		</div></div>

@@ -72,23 +72,40 @@ var DirEntry = React.createClass({displayName: "DirEntry",
 		console.log("right click on an item!")
 	},
 	render: function() {
+		baseclass = "item"
+		if (this.props.item.highlight) {
+			baseclass = baseclass + " selected"
+		}
 		if (this.props.item.Type == 1) {
 			return (
 				React.createElement("div", {onClick: this.props.onClick, 
 				onDoubleClick: this.props.onDoubleClick, 
-				className: "item", onContextMenu: this.contextMenu}, 
+				className: baseclass, onContextMenu: this.contextMenu}, 
 				React.createElement("img", {className: "item-img", src: "img/folder.png"}), 
 				React.createElement("p", {className: "item-title"}, this.props.item.Name))
 			);
 		} else {
 			return (
-				React.createElement("div", {className: "item", onContextMenu: this.contextMenu}, 
+				React.createElement("div", {className: baseclass, onClick: this.props.onClick, 
+				onContextMenu: this.contextMenu}, 
 				React.createElement("img", {className: "item-img", src: "img/file.png"}), 
 				React.createElement("p", {className: "item-title"}, this.props.item.Name))
 			);
 		}
 	}
 
+})
+
+var InfoBar = React.createClass({displayName: "InfoBar",
+	render: function() {
+		return (
+			React.createElement("div", {className: "infobar"}, 
+			React.createElement("h3", null, this.props.item.Name), 
+			React.createElement("p", null, "Size: ", this.props.item.Size, " "), 
+			React.createElement("p", null, "Hash: ", this.props.item.Hash, " "), 
+			React.createElement("p", null, "(show providers here on button click)")
+			))
+	}
 })
 
 var loaddirs = (function () {
@@ -217,6 +234,13 @@ var Explorer = React.createClass({displayName: "Explorer",
 	},
 	selectEntry: function(e) {
 		console.log("entry selected", e)
+		s = this.state
+		if (s.selected) {
+			s.selected.highlight = false
+		}
+		s.selected = e
+		s.selected.highlight = true
+		this.setState(s)
 	},
 	render: function() {
 
@@ -236,11 +260,16 @@ var Explorer = React.createClass({displayName: "Explorer",
 		React.createElement("div", {className: "container"}, 
 		this.state.loading ? React.createElement("div", null, " LOADING!!! ") : undefined, 
 		React.createElement("div", {className: "pathbar"}, "/" + this.path.join("/")), 
+		this.state.selected ? React.createElement(InfoBar, {item: this.state.selected}) : undefined, 
 		React.createElement("div", {className: "explorer", id: "explorer"}, 
+
 		this.path.length > 0 ?
 		React.createElement(DirEntry, {onClick: this.selectEntry.bind(this, upBox), 
 		onDoubleClick: this.up, item: upBox}) : undefined, 
-		entries))
+
+		entries
+		
+		))
 		);
 	}
 })
