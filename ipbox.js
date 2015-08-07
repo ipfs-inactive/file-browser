@@ -2,7 +2,7 @@ var dragDrop = require('drag-drop')
 
 var ipfs = ipfsAPI()
 
-dragDrop("#tiles", function(files) {
+dragDropHandler = function(files) {
 	console.log("got some files: ", files)
 	files.forEach(function(f, i) {
 		console.log("got file: ", f.name)
@@ -22,7 +22,7 @@ dragDrop("#tiles", function(files) {
 		})
 		reader.readAsArrayBuffer(f)
 	})
-})
+}
 
 function doThings() {
 	var root = document.getElementById("tiles")

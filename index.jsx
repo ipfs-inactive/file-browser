@@ -4,29 +4,6 @@ var dragDrop = require('drag-drop')
 
 var fs = "testfs"
 
-dragDrop("#explorer", function(files) {
-	console.log("got some files: ", files)
-	files.forEach(function(f, i) {
-		console.log("got file: ", f.name)
-
-		var reader = new FileReader()
-		reader.addEventListener('load', function (e) {
-			var arr = new Uint8Array(e.target.result)
-			var buffer = new Buffer(arr)
-
-			ipfs.add(buffer, function(err, res) {
-				if(err || !res) return console.error(err)
-				console.log(res)
-			})
-		})
-		reader.addEventListener('error', function(err) {
-			console.error('FileReader error' + err)
-		})
-		reader.readAsArrayBuffer(f)
-	})
-})
-
-
 function mountMfs(mfs, defaultHash) {
 	ipfs.mfs.listopen(function(err, res) {
 		if(err || !res) return console.error(err)
@@ -88,16 +65,20 @@ var DirEntry = React.createClass({
 			name: this.props.name,
 		}
 	},
+	contextMenu: function(e) {
+		e.preventDefault()
+		console.log("right click on an item!")
+	},
 	render: function() {
 		if (this.props.item.Type == 1) {
 			return (
-				<div onClick={this.props.onClick} className="item">
+				<div onClick={this.props.onClick} className="item" onContextMenu={this.contextMenu}>
 				<img className="item-img" src="img/folder.png" />
 				<p className="item-title">{this.props.item.Name}</p></div>
 			);
 		} else {
 			return (
-				<div className="item">
+				<div className="item" onContextMenu={this.contextMenu}>
 				<img className="item-img" src="img/file.png" />
 				<p className="item-title">{this.props.item.Name}</p></div>
 			);
@@ -119,7 +100,6 @@ var loaddirs = (function () {
 				return
 			}
 
-			console.log("ENTRIES: ", res.Entries)
 			dispatch.fire('resp-chdir', {
 				entries: res.Entries,
 				path: ctx.path,
@@ -135,9 +115,47 @@ var Explorer = React.createClass({
 			entries: [],
 			loading: true,
         });
-    },
+	},
+	dragDropHandler: function(files) {
+		console.log("got some files: ", files)
+		console.log("path = ", this.path)
+		var curpath = this.path
+		files.forEach(function(f, i) {
+			console.log("got file: ", f.name)
+			console.log(f)
+
+			var reader = new FileReader()
+			reader.addEventListener('load', function (e) {
+				var arr = new Uint8Array(e.target.result)
+				var buffer = new Buffer(arr)
+
+				ipfs.add(buffer, function(err, res) {
+					if(err || !res) return console.error(err)
+					var path = curpath.slice()
+					path.push(f.name)
+					console.log(res, path)
+					ipfs.mfs.put(fs, res.Hash, path.join('/'), function(err, res) {
+						if (err) return console.error(err)
+						
+						dispatch.fire('act-chdir', {
+							fs: fs,
+							path: curpath,
+						})
+					})
+				})
+			})
+			reader.addEventListener('error', function(err) {
+				console.error('FileReader error' + err)
+			})
+			reader.readAsArrayBuffer(f)
+		})
+	},
+
 	componentDidMount: function () {
         var self = this;
+
+		dragDrop("#explorer", this.dragDropHandler)
+
         dispatch.listen('resp-chdir', function (context) {
 			self.path = context.path
             self.setState({
@@ -182,19 +200,19 @@ var Explorer = React.createClass({
 		})
 	},
 	render: function() {
-		if (this.state.loading) {
-			return (<div>LOADING!!!</div>)
-		}
 
-		var entries = this.state.entries.map(function iterator(item) {
-			return (<DirEntry onClick={this.chdir.bind(this, item)} item={item} />)
-        }, this)
+		if (this.state.entries) {
+			var entries = this.state.entries.map(function iterator(item) {
+				return (<DirEntry onClick={this.chdir.bind(this, item)} item={item} />)
+			}, this)
+		}
 
 		return (
 		<div className="container">
+		{this.state.loading ? <div> LOADING!!! </div> : undefined}
 		<div className="pathbar">{"/" + this.path.join("/")}</div>
-		<div className="explorer">
-		<DirEntry onClick={this.up.bind(this)} item={{Name:"..", Type: 1}} />
+		<div className="explorer" id="explorer">
+		<DirEntry onClick={this.up} item={{Name:"..", Type: 1}} />
 		{entries}</div></div>
 		);
 	}
