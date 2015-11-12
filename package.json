@@ -9,6 +9,8 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "drag-drop": "^2.2.4"
+    "drag-drop": "^2.2.4",
+    "ipfs-api": "^2.7.0",
+    "reactify": "^1.1.1"
   }
 }
