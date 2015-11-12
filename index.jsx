@@ -4,31 +4,6 @@ var dragDrop = require('drag-drop')
 
 var fs = 'testfs'
 
-function mountMfs (mfs, defaultHash) {
-  ipfs.mfs.listopen(function (err, res) {
-    if (err || !res) return console.error(err)
-
-    var found = false
-    if (res.Mounts) {
-      res.Mounts.forEach(function (mount, i) {
-        if (mount.Name == mfs) {
-          found = true
-        }
-      })
-    }
-
-    if (!found) {
-      var dirHash = defaultHash || 'QmcQCukqo2eLv2KfGor9uJr5VHx3oLqNbWSt4T5yMpSVtS'
-      ipfs.mfs.create(mfs, dirHash, function (err, res) {
-        if (err) return console.error(err)
-        chdir('/')
-      })
-    } else {
-      chdir('/')
-    }
-  })
-}
-
 var dispatch = (function () {
   var events = {}
   return {
@@ -129,7 +104,7 @@ var loaddirs = (function () {
     if (ctx.path.length == 0) {
       path = '/'
     }
-    ipfs.mfs.ls(fs, path, function (err, res) {
+    ipfs.files.ls(path, function (err, res) {
       if (err || !res) return console.error(err)
 
       dispatch.fire('resp-chdir', {
@@ -178,7 +153,7 @@ var Explorer = React.createClass({
           console.log(res, fpath)
 
           doPut = function () {
-            ipfs.mfs.put(fs, filehash, fpath.join('/'), function (err, res) {
+            ipfs.files.cp([filehash, fpath.join('/')], function (err, res) {
               if (err) return console.error(err)
 
               dispatch.fire('act-chdir', {
@@ -189,7 +164,7 @@ var Explorer = React.createClass({
           }
 
           if (relpath.length > 0) {
-            ipfs.mfs.mkdir(fs, relpath.join('/'), true, function (err, res) {
+            ipfs.files.mkdir(relpath.join('/'), {"p":true}, function (err, res) {
               if (err) return console.error(err)
 
               doPut()
