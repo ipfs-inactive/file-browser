@@ -1,35 +1,10 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 (function (Buffer){
 var React = require('react')
-var ipfs = require('ipfs-api')()
+var ipfs = require('ipfs-api')('localhost', '5001')
 var dragDrop = require('drag-drop')
 
 var fs = 'testfs'
-
-function mountMfs (mfs, defaultHash) {
-  ipfs.mfs.listopen(function (err, res) {
-    if (err || !res) return console.error(err)
-
-    var found = false
-    if (res.Mounts) {
-      res.Mounts.forEach(function (mount, i) {
-        if (mount.Name == mfs) {
-          found = true
-        }
-      })
-    }
-
-    if (!found) {
-      var dirHash = defaultHash || 'QmcQCukqo2eLv2KfGor9uJr5VHx3oLqNbWSt4T5yMpSVtS'
-      ipfs.mfs.create(mfs, dirHash, function (err, res) {
-        if (err) return console.error(err)
-        chdir('/')
-      })
-    } else {
-      chdir('/')
-    }
-  })
-}
 
 var dispatch = (function () {
   var events = {}
@@ -127,11 +102,11 @@ var InfoBar = React.createClass({displayName: "InfoBar",
 var loaddirs = (function () {
   dispatch.listen('act-chdir', function (ctx) {
     var fs = ctx.fs
-    var path = ctx.path.join('/')
+    var path = '/' + ctx.path.join('/')
     if (ctx.path.length == 0) {
       path = '/'
     }
-    ipfs.mfs.ls(fs, path, function (err, res) {
+    ipfs.files.ls(path, function (err, res) {
       if (err || !res) return console.error(err)
 
       dispatch.fire('resp-chdir', {
@@ -169,7 +144,7 @@ var Explorer = React.createClass({displayName: "Explorer",
           var filehash = res.Hash
 
           // ensure parent dirs are made
-          var parentDir = f.path.split('/').slice(0, -1)
+          var parentDir = f.fullPath.split('/').slice(0, -1)
           if (parentDir[0] == '') {
             parentDir = parentDir.slice(1)
           }
@@ -180,7 +155,7 @@ var Explorer = React.createClass({displayName: "Explorer",
           console.log(res, fpath)
 
           doPut = function () {
-            ipfs.mfs.put(fs, filehash, fpath.join('/'), function (err, res) {
+            ipfs.files.cp(['/ipfs/'+filehash, '/'+fpath.join('/')], function (err, res) {
               if (err) return console.error(err)
 
               dispatch.fire('act-chdir', {
@@ -191,7 +166,7 @@ var Explorer = React.createClass({displayName: "Explorer",
           }
 
           if (relpath.length > 0) {
-            ipfs.mfs.mkdir(fs, relpath.join('/'), true, function (err, res) {
+            ipfs.files.mkdir(relpath.join('/'), {"p":true}, function (err, res) {
               if (err) return console.error(err)
 
               doPut()
@@ -15891,7 +15866,7 @@ ip.fromLong = function fromInt(ipl) {
 },{"buffer":425,"os":480}],115:[function(require,module,exports){
 module.exports={
   "name": "ipfs-api",
-  "version": "2.7.0",
+  "version": "2.6.2",
   "description": "A client library for the IPFS API",
   "main": "src/index.js",
   "dependencies": {
@@ -16209,10 +16184,7 @@ function IpfsAPI (host_or_multiaddr, port) {
     },
     data: argCommand('object/data'),
     stat: argCommand('object/stat'),
-    links: argCommand('object/links'),
-    patch: function (file, opts, cb) {
-      return requestAPI('object/patch', [file].concat(opts), null, null, cb)
-    }
+    links: argCommand('object/links')
   }
 
   self.swarm = {
@@ -16315,6 +16287,31 @@ function IpfsAPI (host_or_multiaddr, port) {
       return requestAPI('dht/put', [key, value], opts, null, cb)
     }
   }
+
+  self.files = {
+    cp: argCommand('files/cp'),
+    ls: argCommand('files/ls'),
+    mkdir: argCommand('files/mkdir'),
+    stat: argCommand('files/stat'),
+    rm: function (path, opts, cb) {
+      if (typeof (opts) === 'function') {
+        cb = opts
+        opts = {}
+      }
+      return requestAPI('files/rm', path, opts, null, cb)
+    },
+    read: argCommand('files/read'),
+    // write: argCommand('files/write'),
+    write: function (pathDst, files, opts, cb) {
+      if (typeof (opts) === 'function' && cb === undefined) {
+        cb = opts
+        opts = {}
+      }
+
+      return requestAPI('files/write', pathDst, opts, files, cb)
+    },
+    mv: argCommand('files/mv')
+  }
 }
 
 }).call(this,require("buffer").Buffer)
@@ -16392,7 +16389,7 @@ function makeRequest (opts, buffer, cb) {
   delete opts.qs.followSymlinks
 
   const result = {
-    stream: false,
+    stream: opts.stream,
     chunkedObjects: false,
     objects: []
   }
@@ -53405,12 +53402,13 @@ module.exports={
   "_args": [
     [
       "tough-cookie@~2.2.0",
-      "/home/whyrusleeping/code/file-browser/node_modules/request"
+      "/home/fweston/code/file-browser/node_modules/request"
     ]
   ],
   "_from": "tough-cookie@>=2.2.0 <2.3.0",
   "_id": "tough-cookie@2.2.0",
   "_inCache": true,
+  "_installable": true,
   "_location": "/tough-cookie",
   "_nodeVersion": "0.12.5",
   "_npmUser": {
@@ -53434,7 +53432,7 @@ module.exports={
   "_shasum": "d4ce661075e5fddb7f20341d3f9931a6fbbadde0",
   "_shrinkwrap": null,
   "_spec": "tough-cookie@~2.2.0",
-  "_where": "/home/whyrusleeping/code/file-browser/node_modules/request",
+  "_where": "/home/fweston/code/file-browser/node_modules/request",
   "author": {
     "email": "jstashewsky@salesforce.com",
     "name": "Jeremy Stashewsky"
@@ -53481,7 +53479,6 @@ module.exports={
   ],
   "gitHead": "fb1456177c9b51445afa34656eb314c70c2adcd2",
   "homepage": "https://github.com/SalesforceEng/tough-cookie",
-  "installable": true,
   "keywords": [
     "HTTP",
     "RFC2965",
@@ -53506,6 +53503,7 @@ module.exports={
   ],
   "name": "tough-cookie",
   "optionalDependencies": {},
+  "readme": "ERROR: No README data found!",
   "repository": {
     "type": "git",
     "url": "git://github.com/SalesforceEng/tough-cookie.git"
@@ -69836,6 +69834,7 @@ module.exports={
   "_from": "elliptic@>=6.0.0 <7.0.0",
   "_id": "elliptic@6.0.2",
   "_inCache": true,
+  "_installable": true,
   "_location": "/browserify/elliptic",
   "_nodeVersion": "5.0.0",
   "_npmUser": {
@@ -69894,7 +69893,6 @@ module.exports={
   ],
   "gitHead": "330106da186712d228d79bc71ae8e7e68565fa9d",
   "homepage": "https://github.com/indutny/elliptic",
-  "installable": true,
   "keywords": [
     "Cryptography",
     "EC",
@@ -69911,6 +69909,7 @@ module.exports={
   ],
   "name": "elliptic",
   "optionalDependencies": {},
+  "readme": "ERROR: No README data found!",
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com/indutny/elliptic.git"

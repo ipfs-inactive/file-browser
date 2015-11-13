@@ -1,5 +1,5 @@
 var React = require('react')
-var ipfs = require('ipfs-api')()
+var ipfs = require('ipfs-api')('localhost', '5001')
 var dragDrop = require('drag-drop')
 
 var fs = 'testfs'
@@ -100,7 +100,7 @@ var InfoBar = React.createClass({
 var loaddirs = (function () {
   dispatch.listen('act-chdir', function (ctx) {
     var fs = ctx.fs
-    var path = ctx.path.join('/')
+    var path = '/' + ctx.path.join('/')
     if (ctx.path.length == 0) {
       path = '/'
     }
@@ -142,7 +142,7 @@ var Explorer = React.createClass({
           var filehash = res.Hash
 
           // ensure parent dirs are made
-          var parentDir = f.path.split('/').slice(0, -1)
+          var parentDir = f.fullPath.split('/').slice(0, -1)
           if (parentDir[0] == '') {
             parentDir = parentDir.slice(1)
           }
@@ -153,7 +153,7 @@ var Explorer = React.createClass({
           console.log(res, fpath)
 
           doPut = function () {
-            ipfs.files.cp([filehash, fpath.join('/')], function (err, res) {
+            ipfs.files.cp(['/ipfs/'+filehash, '/'+fpath.join('/')], function (err, res) {
               if (err) return console.error(err)
 
               dispatch.fire('act-chdir', {
