@@ -21,9 +21,7 @@ This is the beginning of a file browser UI for ipfs.
 
 Right now it depends on changes to [go-ipfs](https://github.com/ipfs/go-ipfs), [js-ipfs-api](https://github.com/ipfs/js-ipfs-api), and feross's [drag-drop](https://github.com/feross/drag-drop) that have not merged. If you want to try this out, there is a bit of pre-setup work you'll need to do:
 
-- Run feat/mfs branch of go-ipfs
 - Run the daemon in a way that allows different origins
-- Use the js-ipfs-api branch that has mfs support
 - Use the version of feross/drag-drop from this PR: https://github.com/feross/drag-drop/pull/5
 
 ## Usage
