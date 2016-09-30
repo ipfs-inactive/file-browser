@@ -40,4 +40,4 @@ This repository falls under the IPFS [Code of Conduct](https://github.com/ipfs/c
 
 ## License
 
-TODO
+[MIT](LICENSE) © Protocol Labs Inc.
